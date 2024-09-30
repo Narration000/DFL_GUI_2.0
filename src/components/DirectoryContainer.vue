@@ -111,19 +111,17 @@ const filterNode = (value: string, data: Tree) => {
 
 const data: Tree[] = [
   {
-    label: 'Level one 1',
+    label: '通用功能',
     children: [
       {
-        label: 'Level two 1-1',
-        children: [
-          {
-            label: 'Level three 1-1-1',
-          },
-          {
-            label: 'Level three 1-1-2',
-          },
-        ],
+        label: '登录',
       },
+      {
+        label: '点击元素',
+      },
+      {
+        label: '输入验证码',
+      }
     ],
   },
   {
