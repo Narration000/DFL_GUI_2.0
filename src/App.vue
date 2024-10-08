@@ -20,12 +20,16 @@
 
   <el-row :gutter="200">
     <el-col :span="8">
-      <DirectoryContainer :directories="directories" @directory-dblclick="addToSquareComponents" />
+
+      <DirectoryContainer @node-click-add="handleNodeClick"/>
     </el-col>
     <el-col :span="8">
+
       <input v-model="helloWorldMsg" placeholder="Enter HelloWorld message" />
       <HelloWorld :msg="helloWorldMsg"/>
-      <SquareComponent v-for="(component, index) in squareComponents" :key="index" :ref="'squareComponent' + index" :msg="component.msg"/>
+      <ClickOrderComponent :clickOrder="clickOrder" />
+      <!-- <SquareComponent v-for="(component, index) in squareComponents" :key="index" :ref="'squareComponent' + index" :msg="component.msg"/> -->
+      <!-- <SquareComponent :nodeName="selectedNodeName" /> -->
       <SubmitButton ref="submitButton"/>
     </el-col>
     <el-col :span="8">
@@ -37,38 +41,43 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import HelloWorld from './components/HelloWorld.vue';
-import SquareComponent from './components/SquareComponent.vue';
+// import SquareComponent from './components/SquareComponent.vue';
 import SubmitButton from './components/SubmitButton.vue';
 import FileDisplay from './components/FileDisplay.vue';
 import DirectoryContainer from './components/DirectoryContainer.vue';
+import ClickOrderComponent from './components/ClickOrderComponent.vue';
 
-interface SquareComponentData {
-  msg: string;
-}
+// interface SquareComponentData {
+//   msg: string;
+// }
+
+const clickOrder = ref<string[]>([])
+
+
 
 export default defineComponent({
   name: 'App',
   components: {
     HelloWorld,
-    SquareComponent,
+    // SquareComponent,
     SubmitButton,
     FileDisplay,
-    DirectoryContainer
+    DirectoryContainer,
+    ClickOrderComponent
   },
   setup() {
-    const directories = ref<string[]>(['登录', '转账']);
-    const squareComponents = ref<SquareComponentData[]>([]);
+    // const squareComponents = ref<SquareComponentData[]>([]);
     const helloWorldMsg = ref<string>('Welcome to Your Vue.js App');
-
-    const addToSquareComponents = (dir: string) => {
-      squareComponents.value.push({ msg: dir });
+    const clickOrder = ref<string[]>([]);
+    
+    const handleNodeClick = (label: string) => {
+      clickOrder.value.push(label);
     };
-
     return {
-      directories,
-      squareComponents,
+      // squareComponents,
       helloWorldMsg,
-      addToSquareComponents
+      clickOrder,
+      handleNodeClick
     };
   }
 });
