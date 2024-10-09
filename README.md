@@ -10,6 +10,10 @@ npm install
 ```
 
 ### 启动
+- 启动vue3
+```
+npm run dev
+```
 - 启动本地API端口服务（文件读取、脚本执行）
 ```
 npm run start-server

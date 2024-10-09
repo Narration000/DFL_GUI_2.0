@@ -41,6 +41,23 @@ def keyboard_num(character):
 #                         num_list[9]: (0.15, 0.93) }
 #     return numbers_dict[number][0], numbers_dict[number][1]
 
+def get_ver_code():
+    url = 'http://172.20.10.5:5000/get_vercode'
+    if client(predicate='name LIKE "短信验证码已发送*"').exists:
+        phone = client(predicate='name LIKE "短信验证码已发送*"').value[-4:]
+        print(phone)
+    elif client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').exists:
+        phone = client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').value[-4:]
+    # 设备绑定-短信验证码
+    elif client(value = '短信已发送至您的手机号').exists:
+        phone = client(type =  'XCUIElementTypeStaticText', index = 4).value[-4:]
+        print(phone)
+        
+    payload = {'phone': phone}
+    response = requests.get(url, params=payload)
+    ver_code = response.text
+    print(ver_code)
+    return ver_code
 
 def input_ver_code(phone):
     url = 'http://172.20.10.5:5000/get_vercode'
@@ -101,6 +118,8 @@ def input_use_keyboard_plus(string):
                 client.click(*keyboard_plus('change'))
                 flag = 0
         time.sleep(0.1)
+    if flag == 1:
+        client.click(*keyboard_plus('change'))
 
 # 金融键盘输入
 def input_use_keyboard_num(string):
@@ -108,6 +127,17 @@ def input_use_keyboard_num(string):
         client.click(*keyboard_num(character))
         time.sleep(0.3)
     client.click(0.5, 0.5)
+
+def wait_for_element():
+    while True:
+        visibleCount = client.xpath('//XCUIElementTypeImage[@visible="false"]').count()
+        if visibleCount != 2:
+            break
+        elif visibleCount == 2:
+            if client(name = '关闭').exists:
+                break
+        time.sleep(0.3)
+    print('等待结束')
 
 
 # 登录功能
@@ -118,21 +148,51 @@ def login(username, password):
     while client(name = '不再显示该弹窗').exists:
         client(label = 'guiDance closed').click()
         time.sleep(0.2)
-
     client(name = '登录/注册').click()
-
-    if client(name = '切换用户登录').exists:
-        client(name = '切换用户登录').click()
-
+    try:
+        if client(name = '切换用户登录').exists:
+            client(name = '切换用户登录').click()
+    except:
+        pass
+    
     client(name = 'remember-no').click()
     client(value = '请输入手机号码/身份证号码').set_text(username)
     
     client(name = '注册/登录').click()
+    
+    # 游客用户
+    if client(name = '注册').exists:
+        client(name = '获取验证码').click()
+        wait_for_element()
+        client(value = '请输入验证码').set_text(get_ver_code())
+        client(name = '下一步', index = -1).click()
+        wait_for_element()
+        client(value = '请输入登录密码').click()
+        input_use_keyboard_plus(password)
+        client(value = '请再次输入登录密码').click()
+        input_use_keyboard_plus(password)
+        client(name = '完成', index = -1).click()
+        client(name = '确认', index = -1).click()
 
     client(value = '请输入密码').click()
     time.sleep(1)
     input_use_keyboard_plus(password)
     client(name = '登录').click()
+    time.sleep(1)
+    wait_for_element()
+    try:
+        if client(name = '开始人脸识别').exists:
+                client(name = '开始人脸识别').click()
+                wait_for_element()
+                time.sleep(8)
+                client(name = 'blackBack').click()
+                client(name = '确定').click()
+                client(value = '请输入短信验证码').set_text(get_ver_code())
+                client(name = '确定', index = -1).click()
+                wait_for_element()
+                client(name = '确定', index = -1).click()
+    except:
+        pass
 
 
 # 转账功能

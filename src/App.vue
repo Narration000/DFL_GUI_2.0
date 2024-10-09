@@ -1,17 +1,4 @@
 <template>
-  <!-- <div id="app">
-    <div class="main-content">
-      <DirectoryContainer :directories="directories" @directory-dblclick="addToSquareComponents" />
-      <div class="content">
-        <input v-model="helloWorldMsg" placeholder="Enter HelloWorld message" />
-        <HelloWorld :msg="helloWorldMsg"/>
-        <SquareComponent v-for="(component, index) in squareComponents" :key="index" :ref="'squareComponent' + index" :msg="component.msg"/>
-        <SubmitButton ref="submitButton"/>
-      </div>
-    </div>
-    <FileDisplay />
-  </div> -->
-  
   <el-row :gutter="200">
     <el-col :span="8"><div class="grid-content ep-bg-purple" /></el-col>
     <el-col :span="8"><div class="grid-content ep-bg-purple-light" /></el-col>
@@ -25,12 +12,13 @@
     </el-col>
     <el-col :span="8">
 
-      <input v-model="helloWorldMsg" placeholder="Enter HelloWorld message" />
-      <HelloWorld :msg="helloWorldMsg"/>
-      <ClickOrderComponent :clickOrder="clickOrder" />
+      <!-- <input v-model="helloWorldMsg" placeholder="Enter HelloWorld message" /> -->
+      <!-- <HelloWorld :msg="helloWorldMsg"/> -->
+      <ClickOrderComponent :clickOrder="clickOrder"/>
       <!-- <SquareComponent v-for="(component, index) in squareComponents" :key="index" :ref="'squareComponent' + index" :msg="component.msg"/> -->
       <!-- <SquareComponent :nodeName="selectedNodeName" /> -->
-      <SubmitButton ref="submitButton"/>
+      <!-- <SubmitButton ref="submitButton"/> -->
+      <!-- <SubmitDataButton /> -->
     </el-col>
     <el-col :span="8">
       <FileDisplay />
@@ -42,17 +30,11 @@
 import { defineComponent, ref } from 'vue';
 import HelloWorld from './components/HelloWorld.vue';
 // import SquareComponent from './components/SquareComponent.vue';
-import SubmitButton from './components/SubmitButton.vue';
+// import SubmitButton from './components/SubmitButton.vue';
 import FileDisplay from './components/FileDisplay.vue';
 import DirectoryContainer from './components/DirectoryContainer.vue';
 import ClickOrderComponent from './components/ClickOrderComponent.vue';
-
-// interface SquareComponentData {
-//   msg: string;
-// }
-
-const clickOrder = ref<string[]>([])
-
+import SubmitDataButton from './components/SubmitDataButton.vue'
 
 
 export default defineComponent({
@@ -60,7 +42,7 @@ export default defineComponent({
   components: {
     HelloWorld,
     // SquareComponent,
-    SubmitButton,
+    SubmitDataButton,
     FileDisplay,
     DirectoryContainer,
     ClickOrderComponent
@@ -69,7 +51,7 @@ export default defineComponent({
     // const squareComponents = ref<SquareComponentData[]>([]);
     const helloWorldMsg = ref<string>('Welcome to Your Vue.js App');
     const clickOrder = ref<string[]>([]);
-    
+
     const handleNodeClick = (label: string) => {
       clickOrder.value.push(label);
     };
