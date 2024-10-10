@@ -12,7 +12,7 @@
           </li>
         </ul>
         <!-- 对话框 -->
-        <el-dialog v-model="dialogVisible" title="Edit Key-Value Pairs">
+        <el-dialog v-model="dialogVisible" @close="closeDialog" title="Edit Key-Value Pairs">
 
           <el-table :data="tableData" style="width: 100%" max-height="250">
             <el-table-column prop="id" label="ID" width="150" />
@@ -41,17 +41,17 @@
             </el-table-column>
           </el-table>
           <!-- 添加按钮 -->
-          <el-button class="mt-4" style="width: 100%" @click="onAddItem">
-            Add Item
-          </el-button>
+          <el-button class="mt-4" style="width: 100%" @click="onAddItem">Add Item</el-button>
           <!-- 确认和取消按钮 -->
           <span slot="footer" class="dialog-footer">
             <el-button @click="dialogVisible = false">Cancel</el-button>
-            <el-button type="primary" @click="saveData">Confirm</el-button>
+            <el-button type="primary" @click="closeDialog">Confirm</el-button>
           </span>
 
         </el-dialog>
         <el-button type="primary" @click="submitData">Submit Data</el-button>
+        <!-- 删除元素 -->
+        <!-- <el-button @click="deleteClickOrderElement">Delete ClickOrder Element</el-button> -->
     </div>
   </template>
   
@@ -79,11 +79,18 @@ const openDialog = (index: number) => {
   currentIndex.value = index
   dialogVisible.value = true
   // Initialize table data with the current item's data from jsonData
-  tableData.value = jsonData.value[index] || props.clickOrder.map((item, idx) => ({
-    id: idx + 1,
-    key: item.key,
-    value: item.value
-  }))
+  // tableData.value = jsonData.value[index] || props.clickOrder.map((item, idx) => ({
+  //   id: idx + 1,
+  //   key: item.key,
+  //   value: item.value
+  // }))
+  tableData.value = jsonData.value[index] || [{ id: 1, key: '', value: '' }];
+  console.log('tableData:', tableData.value)
+}
+
+const closeDialog = () => {
+  saveData();
+  dialogVisible.value = false;
 }
 
 const onAddItem = () => {
@@ -109,6 +116,14 @@ const saveData = () => {
   dialogVisible.value = false
 }
 
+// const deleteClickOrderElement = () => {
+//   if (currentIndex.value !== null) {
+//     props.clickOrder.splice(currentIndex.value, 1);
+//     currentIndex.value = null;
+//     dialogVisible.value = false;
+//   }
+// };
+
 const submitData = async () => {
   try {
     const dataToSend = {
@@ -127,6 +142,8 @@ const submitData = async () => {
     console.error('Error submitting data:', error)
   }
 }
+
+
 
 // HelloWorld.vue
 // const msg = ref('Welcome to Your Vue.js App')

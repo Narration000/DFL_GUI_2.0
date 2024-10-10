@@ -5,11 +5,31 @@ import requests
 
 # 设置超时时间
 wda.HTTP_TIMEOUT = 10
-# 连接到设备
-c = wda.Client('http://172.20.10.1:8100')
-c.implicitly_wait(10.0)
+# 用户模式
+# # 连接到设备
+# c = wda.Client('http://172.20.10.1:8100')
+# c.implicitly_wait(10.0)
+# # 启动应用
+# client = c.session('com.cjccb.MobileBank')
+
+# 调试模式
+# client = wda.Client('http://172.20.10.1:8100')
+# client.implicitly_wait(10.0)
 # 启动应用
-client = c.session('com.cjccb.MobileBank')
+# client = c.session('com.cjccb.MobileBank')
+
+flagUseModel = 0
+# 0 为调试模式，1 为用户模式
+if flagUseModel == 0:
+    client = wda.Client('http://172.20.10.1:8100')
+    client.implicitly_wait(10.0)
+elif flagUseModel == 1:
+    c = wda.Client('http://172.20.10.1:8100')
+    c.implicitly_wait(10.0)
+    # 关闭应用
+    c.app_stop('com.cjccb.MobileBank')
+    # 启动应用
+    client = c.session('com.cjccb.MobileBank')
 
 # 非乱序安全键盘对应坐标
 def keyboard_plus(character):
@@ -41,32 +61,19 @@ def keyboard_num(character):
 #                         num_list[9]: (0.15, 0.93) }
 #     return numbers_dict[number][0], numbers_dict[number][1]
 
+
 def get_ver_code():
     url = 'http://172.20.10.5:5000/get_vercode'
     if client(predicate='name LIKE "短信验证码已发送*"').exists:
         phone = client(predicate='name LIKE "短信验证码已发送*"').value[-4:]
-        print(phone)
     elif client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').exists:
-        phone = client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').value[-4:]
-    # 设备绑定-短信验证码
-    elif client(value = '短信已发送至您的手机号').exists:
-        phone = client(type =  'XCUIElementTypeStaticText', index = 4).value[-4:]
-        print(phone)
+        phone = client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').value
         
     payload = {'phone': phone}
     response = requests.get(url, params=payload)
     ver_code = response.text
     print(ver_code)
     return ver_code
-
-def input_ver_code(phone):
-    url = 'http://172.20.10.5:5000/get_vercode'
-    payload = {'phone': phone}
-    response = requests.get(url, params=payload)
-    ver_code = response.text
-    print(ver_code)
-    return ver_code
-
 
 
 # 乱序安全键盘输入
@@ -118,8 +125,6 @@ def input_use_keyboard_plus(string):
                 client.click(*keyboard_plus('change'))
                 flag = 0
         time.sleep(0.1)
-    if flag == 1:
-        client.click(*keyboard_plus('change'))
 
 # 金融键盘输入
 def input_use_keyboard_num(string):
@@ -128,78 +133,47 @@ def input_use_keyboard_num(string):
         time.sleep(0.3)
     client.click(0.5, 0.5)
 
-def wait_for_element():
-    while True:
-        visibleCount = client.xpath('//XCUIElementTypeImage[@visible="false"]').count()
-        if visibleCount != 2:
-            break
-        elif visibleCount == 2:
-            if client(name = '关闭').exists:
-                break
-        time.sleep(0.3)
-    print('等待结束')
 
-
-# 登录功能
+# 登录功能不再显示该弹窗
 def login(username, password):
     client(name = '我的').click()
     time.sleep(1)
     # 关闭可能存在的弹窗
-    while client(name = '不再显示该弹窗').exists:
-        client(label = 'guiDance closed').click()
-        time.sleep(0.2)
+    try:
+        if client(name = '不再显示该弹窗').exists:
+            client(label = 'guiDance closed').click()
+            time.sleep(0.2)
+        print('关闭弹窗')
+    except:
+        print('无弹窗')
+        pass
     client(name = '登录/注册').click()
-    try:
-        if client(name = '切换用户登录').exists:
-            client(name = '切换用户登录').click()
-    except:
-        pass
-    
-    client(name = 'remember-no').click()
-    client(value = '请输入手机号码/身份证号码').set_text(username)
-    
-    client(name = '注册/登录').click()
-    
-    # 游客用户
-    if client(name = '注册').exists:
-        client(name = '获取验证码').click()
-        wait_for_element()
-        client(value = '请输入验证码').set_text(get_ver_code())
-        client(name = '下一步', index = -1).click()
-        wait_for_element()
-        client(value = '请输入登录密码').click()
-        input_use_keyboard_plus(password)
-        client(value = '请再次输入登录密码').click()
-        input_use_keyboard_plus(password)
-        client(name = '完成', index = -1).click()
-        client(name = '确认', index = -1).click()
 
-    client(value = '请输入密码').click()
-    time.sleep(1)
-    input_use_keyboard_plus(password)
-    client(name = '登录').click()
-    time.sleep(1)
-    wait_for_element()
-    try:
-        if client(name = '开始人脸识别').exists:
-                client(name = '开始人脸识别').click()
-                wait_for_element()
-                time.sleep(8)
-                client(name = 'blackBack').click()
-                client(name = '确定').click()
-                client(value = '请输入短信验证码').set_text(get_ver_code())
-                client(name = '确定', index = -1).click()
-                wait_for_element()
-                client(name = '确定', index = -1).click()
-    except:
-        pass
+    # 如果已经登录过，且登录账户尾号与传参一致，直接输入密码
+    if client(value = '请输入密码').exists:
+        if username[-4:] == client(predicate='name LIKE "用户*"').value[-4:]:
+            client(value = '请输入密码').click()
+            time.sleep(1)
+            input_use_keyboard_plus(password)
+            client(name = '登录').click()
+            print('已登录')
+    # 否则，切换用户登录
+    elif client(name = '切换用户登录').exists:
+        client(name = '切换用户登录').click()
 
+        client(name = 'remember-no').click()
+        client(value = '请输入手机号码/身份证号码').set_text(username)
+        
+        client(name = '注册/登录').click()
+
+        client(value = '请输入密码').click()
+        time.sleep(1)
+        input_use_keyboard_plus(password)
+        client(name = '登录').click()
+        print('登录成功')
 
 # 转账功能
 def transfer_accounts(receipt_name, receipt_account, amount):
-    client(name = '首页').click()
-    client(name = '全部功能').click()
-    all_features_to_click('转账', '转账')
     client(name = '账号转账').click()
     time.sleep(5)
     client(name = '收款姓名').set_text(receipt_name)
@@ -209,8 +183,13 @@ def transfer_accounts(receipt_name, receipt_account, amount):
     client(value = '请输入金额').click()
     input_use_keyboard_num(amount)
     client(name = '下一步').click()
+
+    if client(name = '温馨提示').exists:
+        client(name = '确认').click_exists()
+        client(name = '确定').click_exists()
+
     time.sleep(5)
-    client(value = '请输入验证码').set_text(input_ver_code(userPhoneNum))
+    client(value = '请输入验证码').set_text(get_ver_code())
     client(name = '下一步').click()
     time.sleep(2)
 
@@ -218,20 +197,62 @@ def transfer_accounts(receipt_name, receipt_account, amount):
     input_use_keyboard_pro('369258')
     client(name = '确定').click()
 
+
 # 全部功能菜单点击
-def all_features_to_click(scrollName, tableName):
-    client.xpath(f'//XCUIElementTypeScrollView//*[@label="{scrollName}"]').click()
-    client.xpath(f'//XCUIElementTypeTable[last()]/XCUIElementTypeCell/XCUIElementTypeStaticText[@label="{tableName}"]').click()
+def all_features_to_click(tableName):
+    client(name = '首页').click()
+    # 关闭可能存在的弹窗
+    try:
+        if client(name = '不再显示该弹窗').exists:
+            client(label = 'guiDance closed').click()
+            time.sleep(0.2)
+        print('关闭弹窗')
+    except:
+        print('无弹窗')
+        pass
+    
+    client(name = '全部功能').click()
+
+    features_dic = {
+        '账户': ['账户总览', '卡管理', '交易查询', '数字人民币', '同号换卡', '同号卡激活'],
+        '转账': ['收款人管理', '转账', '预约转账', '手机号转账', '转账记录查询'],
+        '存款': ['零存整取', '大额存单', '通知存款', '定期存款', '金钱包'],
+        '贷款': ['我的贷款', '贷款', '任意花', '舒心贷', '多存少还', '个人结清证明'],
+        '企业服务': ['交易明细', '对公转账', '企业贷款', '抵息活动', '代发工资', '易企赢'],
+        '儿童金融': ['儿童金融', '儿童卡管理', '发红包', '未来金计划', '成长树存款'],
+        '客户服务': ['视频柜员', '存款证明', '银行网点', '个人设置', '金融助手', '客户权益'],
+        '生活服务': ['消费券', '热门活动', '生活缴费', '一键绑卡', '推荐有礼']
+    }
+    for key in features_dic:
+        if tableName in features_dic[key]:
+            print(key)
+            print(features_dic[key])
+            client.xpath(f'//XCUIElementTypeScrollView//XCUIElementTypeButton[@label="{key}"]').click()
+            time.sleep(0.3)
+            print('tableName:', tableName)
+            client.xpath(f'//XCUIElementTypeTable[last()]/XCUIElementTypeCell/XCUIElementTypeStaticText[@label="{tableName}"]').click()
+            break
+    # client.xpath(f"//XCUIElementTypeTable[2]//XCUIElementTypeStaticText[@label='{tableName}'][last()]").click()
+    # client.xpath(f'//XCUIElementTypeScrollView//*[@label="{scrollName}"]').click()
+    # client.xpath(f'//XCUIElementTypeTable[last()]/XCUIElementTypeCell/XCUIElementTypeStaticText[@label="{tableName}"]').click()
 
 if __name__ == '__main__':
     print('开始')
     print('登录')
-    userPhoneNum = '13055508296'
-    userPassword = 'aaaa1111'
+    # userPhoneNum = '13055508296'
+    # userPassword = 'aaaa1111'
 
-    login(userPhoneNum, userPassword)
-    print('登录成功')
+    # login(userPhoneNum, userPassword)
+    # print('登录成功')
     # print('转账')
     # transfer_accounts('李富国', '6231500010381264', '623.02')
-
+    # client(value = '请输入验证码').set_text(input_ver_code())
+    # all_features_to_click('儿童金融')
+    # login('13055508296', 'aaaa1111')
+    # all_features_to_click('零存整取')
+    # client.xpath('//XCUIElementTypeScrollView//XCUIElementTypeButton/XCUIElementTypeStaticText[@label="账户"]').click()
+    # <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="存款" name="存款" label="存款" enabled="true" visible="true" accessible="false" x="33" y="469" width="30" height="18" index="0"/>
+    x = client.xpath('//XCUIElementTypeScrollView//XCUIElementTypeButton/XCUIElementTypeStaticText[@label="存款"]').find_element_ids()
+    print(x)
+    # client.click(34, 408)
     print('结束')
