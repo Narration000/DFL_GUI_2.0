@@ -173,40 +173,52 @@ def login(username, password):
         print('无弹窗')
         pass
     logging.info('已确认无弹窗')
-    client(name = '登录/注册').click()
-    # click_something('登录/注册')
+
+    click_something('name', '登录/注册')
     # 如果已经登录过，且登录账户尾号与传参一致，直接输入密码
-    if client(value = '请输入密码').exists:
-        if username[-4:] == client(predicate='name LIKE "用户*"').value[-4:]:
+    if client(predicate='name LIKE "用户*"').exists:
+        print(client(predicate='name LIKE "用户*"').value[-4:])
+    try:
+        if client(predicate='name LIKE "用户*"').exists:
+            while username[-4:] == client(predicate='name LIKE "用户*"').value[-4:]:
+                client(value = '请输入密码').click()
+                time.sleep(1)
+                input_use_keyboard_plus(password)
+                client(name = '登录').click()
+                print('已登录')
+                logging.info('1')
+                break
+            # 否则，切换用户登录
+        if client(name = '切换用户登录').exists:
+            client(name = '切换用户登录').click()
+
+            client(name = 'remember-no').click()
+            client(value = '请输入手机号码/身份证号码').set_text(username)
+            
+            client(name = '注册/登录').click()
+
             client(value = '请输入密码').click()
             time.sleep(1)
             input_use_keyboard_plus(password)
             client(name = '登录').click()
-            print('已登录')
-    # 否则，切换用户登录
-    elif client(name = '切换用户登录').exists:
-        client(name = '切换用户登录').click()
+            print('登录成功')
+            logging.info('2')
+        else:
+            client(name = 'remember-no').click()
+            client(value = '请输入手机号码/身份证号码').set_text(username)
+            client(name = '注册/登录').click()
 
-        client(name = 'remember-no').click()
-        client(value = '请输入手机号码/身份证号码').set_text(username)
-        
-        client(name = '注册/登录').click()
+            client(value = '请输入密码').click()
+            time.sleep(1)
+            input_use_keyboard_plus(password)
+            client(name = '登录').click()
+            print('登录成功')
+            logging.info('3')
+    except:
+            pass
+    wait_for_element()
+    
 
-        client(value = '请输入密码').click()
-        time.sleep(1)
-        input_use_keyboard_plus(password)
-        client(name = '登录').click()
-        print('登录成功')
-    else:
-        client(name = 'remember-no').click()
-        client(value = '请输入手机号码/身份证号码').set_text(username)
-        client(name = '注册/登录').click()
-
-        client(value = '请输入密码').click()
-        time.sleep(1)
-        input_use_keyboard_plus(password)
-        client(name = '登录').click()
-        print('登录成功')
 
 # 转账功能
 def transfer_accounts(receipt_name, receipt_account, amount):
@@ -320,4 +332,6 @@ def input_something(nameOrValue, e_property, text):
 
 
 if __name__ == '__main__':
+    # initialize_client()
+    # login('16282058411', 'aaaa1111')
     pass
