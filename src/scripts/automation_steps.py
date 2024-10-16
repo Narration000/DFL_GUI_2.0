@@ -1,10 +1,11 @@
 import wda
 import time
 import requests
+import logging
 
 
 # 设置超时时间
-wda.HTTP_TIMEOUT = 10
+# wda.HTTP_TIMEOUT = 10
 # 用户模式
 # # 连接到设备
 # c = wda.Client('http://172.20.10.1:8100')
@@ -18,18 +19,31 @@ wda.HTTP_TIMEOUT = 10
 # 启动应用
 # client = c.session('com.cjccb.MobileBank')
 
-flagUseModel = 0
-# 0 为调试模式，1 为用户模式
-if flagUseModel == 0:
-    client = wda.Client('http://172.20.10.1:8100')
-    client.implicitly_wait(10.0)
-elif flagUseModel == 1:
-    c = wda.Client('http://172.20.10.1:8100')
-    c.implicitly_wait(10.0)
-    # 关闭应用
-    c.app_stop('com.cjccb.MobileBank')
-    # 启动应用
-    client = c.session('com.cjccb.MobileBank')
+flagUseModel = "用户"
+client = None
+
+
+def set_flag_use_model(value):
+    global flagUseModel
+    flagUseModel = value
+
+# False 为调试模式，True 为用户模式
+def initialize_client():
+    global flagUseModel, client
+    if flagUseModel == "调试":
+        client = wda.Client('http://172.20.10.1:8100')
+        client.implicitly_wait(10.0)
+    # client = wda.USBClient()
+    elif flagUseModel == "用户":
+        c = wda.Client('http://172.20.10.1:8100')
+        c.implicitly_wait(10.0)
+        # 关闭应用
+        c.app_stop('com.cjccb.MobileBank')
+        # 启动应用
+        client = c.session('com.cjccb.MobileBank')
+    return client
+
+
 
 # 非乱序安全键盘对应坐标
 def keyboard_plus(character):
@@ -95,7 +109,7 @@ def input_use_keyboard_pro(pwd):
         y = pwd_loaction[1]
         print(x, y)
         client.click(x, y)
-        time.sleep(0.3)
+        time.sleep(1.0)
     client.click(0.5, 0.5)
 
 
@@ -134,7 +148,18 @@ def input_use_keyboard_num(string):
     client.click(0.5, 0.5)
 
 
-# 登录功能不再显示该弹窗
+def wait_for_element():
+    while True:
+        visibleCount = client.xpath('//XCUIElementTypeImage[@visible="false"]').count()
+        if visibleCount != 2:
+            break
+        elif visibleCount == 2:
+            if client(name = '关闭').exists:
+                break
+        time.sleep(0.3)
+    print('等待结束')
+
+# 登录功能
 def login(username, password):
     client(name = '我的').click()
     time.sleep(1)
@@ -147,8 +172,9 @@ def login(username, password):
     except:
         print('无弹窗')
         pass
+    logging.info('已确认无弹窗')
     client(name = '登录/注册').click()
-
+    # click_something('登录/注册')
     # 如果已经登录过，且登录账户尾号与传参一致，直接输入密码
     if client(value = '请输入密码').exists:
         if username[-4:] == client(predicate='name LIKE "用户*"').value[-4:]:
@@ -171,15 +197,25 @@ def login(username, password):
         input_use_keyboard_plus(password)
         client(name = '登录').click()
         print('登录成功')
+    else:
+        client(name = 'remember-no').click()
+        client(value = '请输入手机号码/身份证号码').set_text(username)
+        client(name = '注册/登录').click()
+
+        client(value = '请输入密码').click()
+        time.sleep(1)
+        input_use_keyboard_plus(password)
+        client(name = '登录').click()
+        print('登录成功')
 
 # 转账功能
 def transfer_accounts(receipt_name, receipt_account, amount):
     client(name = '账号转账').click()
-    time.sleep(5)
+    wait_for_element()
     client(name = '收款姓名').set_text(receipt_name)
     client(name = '收款账户').set_text(receipt_account)
     client(name = '收款银行').click()
-    time.sleep(5)
+    wait_for_element()
     client(value = '请输入金额').click()
     input_use_keyboard_num(amount)
     client(name = '下一步').click()
@@ -188,10 +224,12 @@ def transfer_accounts(receipt_name, receipt_account, amount):
         client(name = '确认').click_exists()
         client(name = '确定').click_exists()
 
-    time.sleep(5)
+    wait_for_element()
     client(value = '请输入验证码').set_text(get_ver_code())
     client(name = '下一步').click()
-    time.sleep(2)
+    print('下一步')
+    wait_for_element()
+    print('下一步结束')
 
     client.click(0.45, 0.51)
     input_use_keyboard_pro('369258')
@@ -210,7 +248,7 @@ def all_features_to_click(tableName):
     except:
         print('无弹窗')
         pass
-    
+    logging.info('已确认无弹窗')
     client(name = '全部功能').click()
 
     features_dic = {
@@ -227,32 +265,59 @@ def all_features_to_click(tableName):
         if tableName in features_dic[key]:
             print(key)
             print(features_dic[key])
-            client.xpath(f'//XCUIElementTypeScrollView//XCUIElementTypeButton[@label="{key}"]').click()
+            logging.info(f'key: {key}')
+            logging.info(f'features_dic[key]: {features_dic[key]}')
+            element = client.xpath(f'//XCUIElementTypeScrollView//XCUIElementTypeButton/XCUIElementTypeStaticText[@label="{key}"]').get()
+            # 获取元素的边界 (bounds)
+            bounds = element.bounds
+            x = bounds.x
+            y = bounds.y
+            print('x:', x, 'y:', y)
+            client.click(x, y)
             time.sleep(0.3)
             print('tableName:', tableName)
             client.xpath(f'//XCUIElementTypeTable[last()]/XCUIElementTypeCell/XCUIElementTypeStaticText[@label="{tableName}"]').click()
+            wait_for_element()
             break
     # client.xpath(f"//XCUIElementTypeTable[2]//XCUIElementTypeStaticText[@label='{tableName}'][last()]").click()
     # client.xpath(f'//XCUIElementTypeScrollView//*[@label="{scrollName}"]').click()
     # client.xpath(f'//XCUIElementTypeTable[last()]/XCUIElementTypeCell/XCUIElementTypeStaticText[@label="{tableName}"]').click()
 
-if __name__ == '__main__':
-    print('开始')
-    print('登录')
-    # userPhoneNum = '13055508296'
-    # userPassword = 'aaaa1111'
 
-    # login(userPhoneNum, userPassword)
-    # print('登录成功')
-    # print('转账')
-    # transfer_accounts('李富国', '6231500010381264', '623.02')
-    # client(value = '请输入验证码').set_text(input_ver_code())
-    # all_features_to_click('儿童金融')
-    # login('13055508296', 'aaaa1111')
-    # all_features_to_click('零存整取')
-    # client.xpath('//XCUIElementTypeScrollView//XCUIElementTypeButton/XCUIElementTypeStaticText[@label="账户"]').click()
-    # <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="存款" name="存款" label="存款" enabled="true" visible="true" accessible="false" x="33" y="469" width="30" height="18" index="0"/>
-    x = client.xpath('//XCUIElementTypeScrollView//XCUIElementTypeButton/XCUIElementTypeStaticText[@label="存款"]').find_element_ids()
-    print(x)
-    # client.click(34, 408)
-    print('结束')
+def click_something(nameOrValue, e_property):
+    if nameOrValue == 'name':
+        try:
+            client(name = e_property).click()
+            logging.info(f'点击{nameOrValue}')
+        except:
+            logging.info(f'未找到{nameOrValue}')
+            pass
+    elif nameOrValue == 'value':
+        try:
+            client(value = e_property).click()
+            logging.info(f'点击{nameOrValue}')
+        except:
+            logging.info(f'未找到{nameOrValue}')
+            pass
+
+
+def input_something(nameOrValue, e_property, text):
+    if nameOrValue == 'name':
+        try:
+            client(name = e_property).set_text(text)
+            logging.info(f'输入{nameOrValue}')
+        except:
+            logging.info(f'未找到{nameOrValue}')
+            pass
+    elif nameOrValue == 'value':
+        try:
+            client(value = e_property).set_text(text)
+            logging.info(f'输入{nameOrValue}')
+        except:
+            logging.info(f'未找到{nameOrValue}')
+            pass
+
+
+
+if __name__ == '__main__':
+    pass

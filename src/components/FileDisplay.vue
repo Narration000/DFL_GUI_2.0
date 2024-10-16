@@ -42,6 +42,7 @@ export default defineComponent({
 <template>
     <div class="file-display">
       <h3>Python Scripts</h3>
+      <button @click="fetchPythonFiles">Refresh</button>
       <ul>
         <li
           v-for="file in pythonFiles"
