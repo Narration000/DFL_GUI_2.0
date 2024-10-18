@@ -6,6 +6,24 @@ const axios = require('axios');
 
 const app = express();
 const port = 3000;
+app.use(express.json());
+
+
+app.post('/api/login', (req, res) => {
+  console.log('req.body:', req.body);
+  const { account, password } = req.body;
+  const command = `/usr/bin/python3  src/scripts/BaseLogin.py --arg1 ${account} --arg2 ${password}`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`执行错误: ${error}`);
+      return res.status(500).send(`执行错误: ${error}`);
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+    res.send(`stdout: ${stdout}\nstderr: ${stderr}`);
+  });
+});
 
 app.get('/api/python-files', (req, res) => {
   const scriptsDir = path.join('./src/scripts');
