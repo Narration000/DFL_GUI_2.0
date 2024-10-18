@@ -82,12 +82,19 @@ def get_ver_code():
         phone = client(predicate='name LIKE "短信验证码已发送*"').value[-4:]
     elif client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').exists:
         phone = client.xpath('//XCUIElementTypeTextField[@label="手机号码"]').value
-        
+    elif client(name = '短信已发送至您的手机号').exists:
+        phone = client(predicate='name LIKE "1*"').value[-4:]
+    else:
+        phone = None
     payload = {'phone': phone}
-    response = requests.get(url, params=payload)
-    ver_code = response.text
-    print(ver_code)
-    return ver_code
+    # print(phone)
+    if phone == None:
+        return '0000'
+    else:
+        response = requests.get(url, params=payload)
+        ver_code = response.text
+        print(ver_code)
+        return ver_code
 
 
 # 乱序安全键盘输入
@@ -139,6 +146,10 @@ def input_use_keyboard_plus(string):
                 client.click(*keyboard_plus('change'))
                 flag = 0
         time.sleep(0.1)
+    if flag == 1:
+        client.click(*keyboard_plus('change'))
+        flag = 0
+        
 
 # 金融键盘输入
 def input_use_keyboard_num(string):
@@ -185,6 +196,26 @@ def login(username, password):
                 time.sleep(1)
                 input_use_keyboard_plus(password)
                 client(name = '登录').click()
+                wait_for_element()
+                print("判断是否有人脸识别")
+                if client(name = '开始人脸识别').exists:
+                    print("有人脸识别")
+                    client(name = '开始人脸识别').click()
+                    wait_for_element()
+                    if client(name = 'wbcf checkbox unselect 651').exists:
+                        client(name = 'wbcf checkbox unselect 651').click()
+                        time.sleep(1)
+                        client(name = '同意授权并继续').click()
+                    time.sleep(6)
+                    # backbutton@light
+                    client(name = 'backbutton@light').click()
+                    client(value = '确定').click()
+                    wait_for_element()
+                    client(value = '请输入短信验证码').set_text(get_ver_code())
+                    client(name = '确定').click()
+                    wait_for_element()
+                    time.sleep(1)
+                    client(name = '确定', index = -1).click()
                 print('已登录')
                 logging.info('1')
                 break
@@ -201,6 +232,25 @@ def login(username, password):
             time.sleep(1)
             input_use_keyboard_plus(password)
             client(name = '登录').click()
+            print("判断是否有人脸识别")
+            if client(name = '开始人脸识别').exists:
+                print("有人脸识别")
+                client(name = '开始人脸识别').click()
+                wait_for_element()
+                if client(name = 'wbcf checkbox unselect 651').exists:
+                    client(name = 'wbcf checkbox unselect 651').click()
+                    time.sleep(1)
+                    client(name = '同意授权并继续').click()
+                time.sleep(6)
+                # backbutton@light
+                client(name = 'backbutton@light').click()
+                client(value = '确定').click()
+                wait_for_element()
+                client(value = '请输入短信验证码').set_text(get_ver_code())
+                client(name = '确定').click()
+                wait_for_element()
+                time.sleep(1)
+                client(name = '确定', index = -1).click()
             print('登录成功')
             logging.info('2')
         else:
@@ -212,6 +262,25 @@ def login(username, password):
             time.sleep(1)
             input_use_keyboard_plus(password)
             client(name = '登录').click()
+            print("判断是否有人脸识别")
+            if client(name = '开始人脸识别').exists:
+                print("有人脸识别")
+                client(name = '开始人脸识别').click()
+                wait_for_element()
+                if client(name = 'wbcf checkbox unselect 651').exists:
+                    client(name = 'wbcf checkbox unselect 651').click()
+                    time.sleep(1)
+                    client(name = '同意授权并继续').click()
+                time.sleep(6)
+                # backbutton@light
+                client(name = 'backbutton@light').click()
+                client(value = '确定').click()
+                wait_for_element()
+                client(value = '请输入短信验证码').set_text(get_ver_code())
+                client(name = '确定').click()
+                wait_for_element()
+                time.sleep(1)
+                client(name = '确定', index = -1).click()
             print('登录成功')
             logging.info('3')
     except:
@@ -312,6 +381,11 @@ def click_something(nameOrValue, e_property):
             logging.info(f'未找到{nameOrValue}')
             pass
 
+# 点击坐标
+def click_position(x, y):
+    client.click(x, y)
+    logging.info(f'点击{x, y}')
+
 
 def input_something(nameOrValue, e_property, text):
     if nameOrValue == 'name':
@@ -330,8 +404,16 @@ def input_something(nameOrValue, e_property, text):
             pass
 
 
+def click_some_keyboard(typeOfKeyboard, k_property):
+    if typeOfKeyboard == 'pro':
+        input_use_keyboard_pro(k_property)
+    elif typeOfKeyboard == 'plus':
+        input_use_keyboard_plus(k_property)
+    elif typeOfKeyboard == 'num':
+        input_use_keyboard_num(k_property)
+
 
 if __name__ == '__main__':
     # initialize_client()
-    # login('16282058411', 'aaaa1111')
+    # client(name = '确定', index = -1).click()
     pass
